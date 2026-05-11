@@ -7,6 +7,8 @@ import os
 # ==========================================
 # 📂 1. 設定與裝置
 # ==========================================
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"🔥 使用運算裝置: {device}")
 
@@ -38,11 +40,11 @@ bert_model.eval()
 
 # 設定 5 個權重檔案的名稱
 model_paths = [
-    "level0.pth", 
-    "level1.pth", 
-    "level2.pth", 
-    "level3.pth", 
-    "level4.pth"
+    os.path.join(current_dir, "level0.pth"), 
+    os.path.join(current_dir, "level1.pth"), 
+    os.path.join(current_dir, "level2.pth"), 
+    os.path.join(current_dir, "level3.pth"), 
+    os.path.join(current_dir, "level4.pth")
 ]
 
 mlp_models = []

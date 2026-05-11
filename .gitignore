@@ -3,4 +3,13 @@
 *.bin
 *.json
 *.npy
-!近義詞投票/data_set/*.json
+*.pth
+*.xlsx
+*:Zone.Identifier
+
+# 近義詞投票的訓練資料與輸出
+近義詞投票/data_set/
+近義詞投票/output/
+近義詞投票/task_data/
+近義詞投票/bert/
+近義詞投票/fasttext/

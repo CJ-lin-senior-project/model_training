@@ -153,6 +153,7 @@ optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 
 # 把 LR Scheduler 的依據改為 'max'，因為我們之後要餵給它 F1 Score
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=3, factor=0.5)
+best_model_path = os.path.join(current_dir, 'level0.pth')
 
 # ==========================================
 # 🔄 4. 訓練迴圈 (改為監控 F1 Score)
@@ -211,7 +212,7 @@ for epoch in range(EPOCHS):
     if current_f1 > best_test_f1:
         best_test_f1 = current_f1
         epochs_no_improve = 0
-        torch.save(model.state_dict(), 'level0.pth')
+        torch.save(model.state_dict(), best_model_path)
         print(f"  🌟 F1 分數提升至 {best_test_f1:.4f}，模型已儲存！")
     else:
         epochs_no_improve += 1
@@ -223,7 +224,7 @@ for epoch in range(EPOCHS):
 # 📊 5. 報表匯出 (動態閾值尋找最佳 F1)
 # ==========================================
 print("\n📝 載入最佳權重，尋找最佳閾值並產生報表...")
-model.load_state_dict(torch.load('level0.pth', weights_only=True))
+model.load_state_dict(torch.load(best_model_path, weights_only=True))
 model.eval()
 
 all_preds_probs = []

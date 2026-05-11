@@ -10,10 +10,12 @@ from transformers import BertTokenizer, BertModel
 # ==========================================
 # 📂 1. 設定與路徑 (👉 請在這裡填入你的相對路徑)
 # ==========================================
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
 # 請填入包含那 16 個 JSON 檔案的資料夾相對路徑。
 # 例如："./data" 或 "../my_json_files"
 # 如果檔案就跟這支 python 程式放在一起，請填 "./"
-TARGET_DIR = "./model_training/近義詞投票/data_set"  
+TARGET_DIR = os.path.join(current_dir, "data_set")  
 
 # ------------------------------------------
 
@@ -54,7 +56,7 @@ bert_model = BertModel.from_pretrained('bert-base-chinese').to(device)
 bert_model.eval()
 
 # 確保你有 level0.pth 到 level4.pth
-model_paths = ["level0.pth", "level1.pth", "level2.pth", "level3.pth", "level4.pth"]
+model_paths = [os.path.join(current_dir,"bert", name) for name in ["level0.pth", "level1.pth", "level2.pth", "level3.pth", "level4.pth"]]
 mlp_models = []
 
 print("📦 正在載入 5 個 MLP 分類模型...")
@@ -80,6 +82,25 @@ def extract_bert_features(word1, word2):
         embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
         vec1, vec2 = embeddings[0], embeddings[1]
         return np.concatenate([vec1, vec2])
+    
+def cosine_similarity(v1, v2):
+    """計算兩個向量的餘弦相似度，或兩個詞的 BERT 向量相似度"""
+    # 如果輸入是字串，先轉成 BERT 向量
+    if isinstance(v1, str):
+        with torch.no_grad():
+            inputs1 = tokenizer(v1, return_tensors='pt', truncation=True, max_length=16).to(device)
+            outputs1 = bert_model(**inputs1)
+            v1 = outputs1.last_hidden_state[:, 0, :].squeeze().cpu().numpy()
+    if isinstance(v2, str):
+        with torch.no_grad():
+            inputs2 = tokenizer(v2, return_tensors='pt', truncation=True, max_length=16).to(device)
+            outputs2 = bert_model(**inputs2)
+            v2 = outputs2.last_hidden_state[:, 0, :].squeeze().cpu().numpy()
+    
+    norm1, norm2 = np.linalg.norm(v1), np.linalg.norm(v2)
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    return np.dot(v1, v2) / (norm1 * norm2)
 
 def vote_synonym_level(word1, word2):
     """從高 Level(4, 最寬鬆) 往低 Level(0, 最嚴格) 檢查，判定最終 Level"""
@@ -161,6 +182,8 @@ def process_json_files():
                 
                 for d_word in dict_words:
                     level, score = vote_synonym_level(new_word, d_word)
+                    # score = cosine_similarity(new_word, d_word)
+                    # level = 6
                     
                     # 比較並保留最高分
                     if score > best_score:
@@ -174,7 +197,7 @@ def process_json_files():
                 "新詞": new_word,
                 "最佳配對辭典詞": best_dict_word,
                 "判定Level": best_level if best_level != -1 else "都不是",
-                "判定分數": best_score if best_score != -1.0 else 0.0
+                "判定分數": float(best_score) if best_score != -1.0 else 0.0
             }
         
         # 儲存結果為新的 JSON 檔案 (存回原本的資料夾)

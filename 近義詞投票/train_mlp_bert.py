@@ -163,6 +163,7 @@ model = BinaryMLP(X_train_scaled.shape[1]).to(device)
 criterion = FocalLoss(weight=class_weights_tensor, gamma=2.0)
 optimizer = optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.01)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, factor=0.5)
+best_model_path = os.path.join(current_dir, 'level4.pth')
 
 # ==========================================
 # 🔄 4. 訓練迴圈
@@ -202,7 +203,7 @@ for epoch in range(EPOCHS):
     if test_loss < best_test_loss:
         best_test_loss = test_loss
         epochs_no_improve = 0
-        torch.save(model.state_dict(), 'level4.pth')
+        torch.save(model.state_dict(), best_model_path)
     else:
         epochs_no_improve += 1
         if epochs_no_improve >= patience: 
@@ -213,7 +214,7 @@ for epoch in range(EPOCHS):
 # 📊 5. 報表匯出 (自動尋找最佳門檻 + 實戰診斷)
 # ==========================================
 print("\n📝 載入最佳權重，產生詳細診斷報表...")
-model.load_state_dict(torch.load('level4.pth', weights_only=True))
+model.load_state_dict(torch.load(best_model_path, weights_only=True))
 model.eval()
 
 all_probs_class1 = []
